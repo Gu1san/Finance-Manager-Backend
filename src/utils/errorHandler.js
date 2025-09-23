@@ -10,6 +10,14 @@ function isValidDate(dateString) {
   return true;
 }
 
+function isValidType(status) {
+  const validType = ["entrada", "saída"];
+  if (!validType.includes(status)) {
+    return false;
+  }
+  return true;
+}
+
 function invalidPayloadResponse(res, error, message = "Parâmetros inválidos") {
   return res.status(400).json({
     status: 400,
@@ -18,4 +26,4 @@ function invalidPayloadResponse(res, error, message = "Parâmetros inválidos") 
   });
 }
 
-module.exports = { isValidDate, invalidPayloadResponse };
+module.exports = { isValidDate, isValidType, invalidPayloadResponse };

@@ -2,6 +2,7 @@ let db = require("../data/transactions");
 const {
   isValidDate,
   invalidPayloadResponse,
+  isValidType,
 } = require("../utils/errorHandler");
 
 function getTransactions(req, res) {
@@ -26,15 +27,31 @@ function getTransactionsByCategory(req, res) {
   res.json(filtered);
 }
 
+function getBalance(req, res) {
+  const saldo = db.reduce((acc, t) => {
+    if (t.type === "entrada") {
+      return acc + t.amount;
+    } else if (t.type === "saída") {
+      return acc - t.amount;
+    }
+    return acc;
+  }, 0);
+
+  res.json({ balance: saldo });
+}
+
 function createTransaction(req, res) {
-  const { amount, description, date, category } = req.body;
+  const { amount, description, date, category, type } = req.body;
   const errors = [];
 
-  if (!amount || !description || !date || !category) {
+  if (!amount || !description || !date || !category || !type) {
     errors.push({ fields: "Campos obrigatórios ausentes" });
   }
   if (!isValidDate(date)) {
     errors.push({ date: "Data da transação inválida" });
+  }
+  if (!isValidType(type)) {
+    errors.push({ type: "O valor 'type' deve ser 'entrada' ou 'saída'" });
   }
   if (errors.length > 0) return invalidPayloadResponse(res, errors);
 
@@ -56,16 +73,19 @@ function createTransaction(req, res) {
 // Atualizar transação (PUT)
 function updateTransaction(req, res) {
   const errors = [];
-  const { id, description, amount, category, date } = req.body;
+  const { id, description, amount, category, date, type } = req.body;
 
   if (id && id != req.params.id) {
     errors.push({ id: "Não é permitido alterar o ID da transação" });
   }
-  if (!description || !amount || !category || !date) {
+  if (!description || !amount || !category || !date || !type) {
     errors.push({ fields: "Campos obrigatórios ausentes" });
   }
   if (!isValidDate(date)) {
     errors.push({ date: "Data inválida" });
+  }
+  if (!isValidType(type)) {
+    errors.push({ type: "O valor 'type' deve ser 'entrada' ou 'saída'" });
   }
   if (errors.length > 0) return invalidPayloadResponse(res, errors);
 
@@ -104,6 +124,9 @@ function patchTransaction(req, res) {
   if (data.date && !isValidDate(data.date)) {
     errors.push({ date: "Data inválida" });
   }
+  if (!isValidType(data.type)) {
+    errors.push({ type: "O valor 'type' deve ser 'entrada' ou 'saída'" });
+  }
   if (errors.length > 0) return res.status(400).json({ errors });
 
   let transaction = db.find((t) => t.id == req.params.id);
@@ -129,6 +152,7 @@ module.exports = {
   getTransactions,
   getTransactionById,
   getTransactionsByCategory,
+  getBalance,
   createTransaction,
   updateTransaction,
   patchTransaction,
