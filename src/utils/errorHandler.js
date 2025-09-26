@@ -11,7 +11,7 @@ function isValidDate(dateString) {
 }
 
 function isValidType(status) {
-  const validType = ["entrada", "saída"];
+  const validType = ["entrada", "saida"];
   if (!validType.includes(status)) {
     return false;
   }
