@@ -36,6 +36,7 @@ Thumbs.db
 *.tmp
 *.swp
 *.swo
+uploads/
 
 # Coverage
 coverage/
