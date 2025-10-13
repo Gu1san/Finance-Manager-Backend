@@ -35,7 +35,6 @@ async function getTransactionsByCategory(req, res) {
   try {
     const category = req.query.category;
     const filtered = await repo.getByCategory(category);
-    console.log(filtered);
     if (filtered.length === 0)
       return res
         .status(404)
