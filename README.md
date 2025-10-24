@@ -44,7 +44,16 @@ Essa API serve como base para o front-end em React (em desenvolvimento), permiti
 - Autenticação de usuários.  
 - Migração do banco de dados para PostgreSQL.
 - Implementação de testes unitários.
-- Integração com o frontend React.  
+- Integração com o frontend React.
+
+## Atualizações
+- Teste de requisições no frontend React
+  
+
+https://github.com/user-attachments/assets/93f5ba64-4dfd-4313-bd92-31c98b75b077
+
+
+ 
 
 ## 👨‍💻 Autor  
 - [Guilherme Cesário](https://github.com/Gu1san)  
