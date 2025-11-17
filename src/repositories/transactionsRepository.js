@@ -45,6 +45,21 @@ async function getByCategory(category) {
     .where("categories.name", category);
 }
 
+async function getByType(type) {
+  return await db("transactions")
+    .select(
+      "transactions.id",
+      "transactions.description",
+      "transactions.amount",
+      "transactions.type",
+      "transactions.date",
+      "transactions.category_id",
+      "categories.name as category"
+    )
+    .leftJoin("categories", "transactions.category_id", "categories.id")
+    .where("transactions.type", type);
+}
+
 async function getCategoryIdByName(name) {
   let category = await db("categories").where({ name }).first();
   if (!category) {
@@ -75,21 +90,51 @@ async function remove(id) {
 
 async function getBalance() {
   const transactions = await getAll();
+
+  const balance = transactions.reduce(
+    (acc, t) => {
+      if (t.type === "entrada") {
+        acc.entradas += Number(t.amount);
+      } else if (t.type === "saida") {
+        acc.saidas += Number(t.amount);
+      }
+      return acc;
+    },
+    { entradas: 0, saidas: 0, total: 0 }
+  );
+
+  balance.total = balance.entradas - balance.saidas;
+
+  return balance;
+}
+
+async function getBalanceByCategory() {
+  const transactions = await getAll();
+
   return transactions.reduce((acc, t) => {
-    return t.type === "entrada"
-      ? acc + Number(t.amount)
-      : acc - Number(t.amount);
-  }, 0);
+    const category = t.category || "Outros";
+    let amount = Number(t.amount);
+    if (t.type === "saida") {
+      amount *= -1;
+    }
+
+    if (!acc[category]) acc[category] = 0;
+    acc[category] += amount;
+
+    return acc;
+  }, {});
 }
 
 module.exports = {
   getAll,
   getById,
   getByCategory,
+  getByType,
   getCategoryIdByName,
   create,
   update,
   patch,
   remove,
   getBalance,
+  getBalanceByCategory,
 };

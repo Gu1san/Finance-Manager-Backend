@@ -45,6 +45,26 @@ async function getTransactionsByCategory(req, res) {
   }
 }
 
+async function getTransactionsByType(req, res) {
+  try {
+    const type = req.query.type;
+    if (!isValidType(type)) {
+      return res
+        .status(400)
+        .json({ error: "Tipo inválido. Use 'entrada' ou 'saida'" });
+    }
+    const filtered = await repo.getByType(type);
+    if (filtered.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Nenhuma transação encontrada deste tipo" });
+    }
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
+  }
+}
+
 // Saldo
 async function getBalance(req, res) {
   try {
@@ -52,6 +72,18 @@ async function getBalance(req, res) {
     res.json({ balance });
   } catch (err) {
     res.status(500).json({ error: `Erro ao calcular saldo: ${err}` });
+  }
+}
+
+// Saldo por categoria
+async function getBalanceByCategory(req, res) {
+  try {
+    const balance = await repo.getBalanceByCategory();
+    res.json({ balance });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: `Erro ao calcular saldo por categoria: ${err}` });
   }
 }
 
@@ -168,7 +200,9 @@ module.exports = {
   getTransactions,
   getTransactionById,
   getTransactionsByCategory,
+  getTransactionsByType,
   getBalance,
+  getBalanceByCategory,
   createTransaction,
   updateTransaction,
   patchTransaction,
