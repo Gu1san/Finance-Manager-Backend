@@ -23,6 +23,12 @@ module.exports = {
   production: {
     client: "pg",
     connection: process.env.DATABASE_URL,
+    pool: {
+      min: 0,
+      max: 5,
+      acquireTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+    },
     migrations: {
       directory: "./src/migrations",
     },
