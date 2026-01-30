@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-reportsController = require("../controllers/reportsController");
+const reportsController = require("../controllers/reportsController");
+const { ensureAuthenticated } = require("../middlewares/authMiddleware");
+
+router.use(ensureAuthenticated);
 
 router.get("/category", reportsController.getReportsByCategory);
 router.get("/type", reportsController.getReportsByType);

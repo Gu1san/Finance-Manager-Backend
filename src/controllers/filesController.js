@@ -10,6 +10,8 @@ async function importTransactions(req, res) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
 
+    const userId = req.user.id;
+
     const promises = [];
     const errors = [];
 
@@ -42,7 +44,7 @@ async function importTransactions(req, res) {
               type,
               category_id,
             };
-          })()
+          })(),
         );
       })
       .on("end", async () => {
@@ -50,7 +52,7 @@ async function importTransactions(req, res) {
           const results = await Promise.all(promises);
 
           for (const transaction of results) {
-            await repo.create(transaction);
+            await repo.create(transaction, userId);
           }
 
           res.json({
@@ -68,7 +70,8 @@ async function importTransactions(req, res) {
 
 async function exportTransactions(req, res) {
   try {
-    const transactions = await repo.getAll();
+    const userId = req.user.id;
+    const transactions = await repo.getAll(userId);
     const fields = ["description", "amount", "type", "category", "date"];
     const opts = { fields };
     const parser = new Parser(opts);

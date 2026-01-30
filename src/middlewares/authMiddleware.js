@@ -9,7 +9,7 @@ function ensureAuthenticated(req, res, next) {
 
   try {
     const decoded = verifyToken(token);
-    req.userId = decoded.id;
+    req.user = { id: decoded.id };
     next();
   } catch {
     return res.status(401).json({ message: "Invalid token" });

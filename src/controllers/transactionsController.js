@@ -11,7 +11,7 @@ const csv = require("csv-parser");
 // Buscar todas
 async function getTransactions(req, res) {
   try {
-    const transactions = await repo.getAll(req.userId);
+    const transactions = await repo.getAll(req.user.id);
     res.json(transactions);
   } catch (err) {
     res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
@@ -21,7 +21,7 @@ async function getTransactions(req, res) {
 // Buscar por ID
 async function getTransactionById(req, res) {
   try {
-    const transaction = await repo.getById(req.params.id, req.userId);
+    const transaction = await repo.getById(req.params.id, req.user.id);
     if (!transaction)
       return res.status(404).json({ error: "Transação não encontrada" });
     res.json(transaction);
@@ -34,7 +34,7 @@ async function getTransactionById(req, res) {
 async function getTransactionsByCategory(req, res) {
   try {
     const category = req.query.category;
-    const filtered = await repo.getByCategory(category, req.userId);
+    const filtered = await repo.getByCategory(category, req.user.id);
     if (filtered.length === 0)
       return res
         .status(404)
@@ -53,7 +53,7 @@ async function getTransactionsByType(req, res) {
         .status(400)
         .json({ error: "Tipo inválido. Use 'entrada' ou 'saida'" });
     }
-    const filtered = await repo.getByType(type, req.userId);
+    const filtered = await repo.getByType(type, req.user.id);
     if (filtered.length === 0) {
       return res
         .status(404)
@@ -68,7 +68,7 @@ async function getTransactionsByType(req, res) {
 // Saldo
 async function getBalance(req, res) {
   try {
-    const balance = await repo.getBalance(req.userId);
+    const balance = await repo.getBalance(req.user.id);
     res.json({ balance });
   } catch (err) {
     res.status(500).json({ error: `Erro ao calcular saldo: ${err}` });
@@ -78,7 +78,7 @@ async function getBalance(req, res) {
 // Saldo por categoria
 async function getBalanceByCategory(req, res) {
   try {
-    const balance = await repo.getBalanceByCategory(req.userId);
+    const balance = await repo.getBalanceByCategory(req.user.id);
     res.json({ balance });
   } catch (err) {
     res
@@ -111,7 +111,7 @@ async function createTransaction(req, res) {
         type,
         category_id,
       },
-      req.userId,
+      req.user.id,
     );
 
     res.status(201).json(created);
@@ -133,7 +133,7 @@ async function updateTransaction(req, res) {
     if (!isValidType(type)) errors.push({ type: "Entrada ou saída inválida" });
     if (errors.length > 0) return invalidPayloadResponse(res, errors);
 
-    const exists = await repo.getById(req.params.id, req.userId);
+    const exists = await repo.getById(req.params.id, req.user.id);
     if (!exists)
       return res.status(404).json({ error: "Transação não encontrada" });
 
@@ -149,7 +149,7 @@ async function updateTransaction(req, res) {
         type,
         category_id,
       },
-      req.userId,
+      req.user.id,
     );
 
     res.json(updated);
@@ -173,7 +173,7 @@ async function patchTransaction(req, res) {
       return res.status(400).json({ error: "Entrada ou saída inválida" });
     }
 
-    const exists = await repo.getById(req.params.id, req.userId);
+    const exists = await repo.getById(req.params.id, req.user.id);
     if (!exists)
       return res.status(404).json({ error: "Transação não encontrada" });
 
@@ -182,7 +182,7 @@ async function patchTransaction(req, res) {
       updateData.category_id = await repo.getCategoryIdByName(data.category);
     }
 
-    const updated = await repo.patch(req.params.id, updateData, req.userId);
+    const updated = await repo.patch(req.params.id, updateData, req.user.id);
     res.json(updated);
   } catch (err) {
     res
@@ -194,7 +194,7 @@ async function patchTransaction(req, res) {
 // Deletar
 async function deleteTransaction(req, res) {
   try {
-    const deleted = await repo.remove(req.params.id, req.userId);
+    const deleted = await repo.remove(req.params.id, req.user.id);
     if (!deleted)
       return res.status(404).json({ error: "Transação não encontrada" });
     res.status(204).send();
