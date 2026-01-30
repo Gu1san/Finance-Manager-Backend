@@ -11,7 +11,7 @@ const csv = require("csv-parser");
 // Buscar todas
 async function getTransactions(req, res) {
   try {
-    const transactions = await repo.getAll();
+    const transactions = await repo.getAll(req.userId);
     res.json(transactions);
   } catch (err) {
     res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
@@ -21,7 +21,7 @@ async function getTransactions(req, res) {
 // Buscar por ID
 async function getTransactionById(req, res) {
   try {
-    const transaction = await repo.getById(req.params.id);
+    const transaction = await repo.getById(req.params.id, req.userId);
     if (!transaction)
       return res.status(404).json({ error: "Transação não encontrada" });
     res.json(transaction);
@@ -34,7 +34,7 @@ async function getTransactionById(req, res) {
 async function getTransactionsByCategory(req, res) {
   try {
     const category = req.query.category;
-    const filtered = await repo.getByCategory(category);
+    const filtered = await repo.getByCategory(category, req.userId);
     if (filtered.length === 0)
       return res
         .status(404)
@@ -53,7 +53,7 @@ async function getTransactionsByType(req, res) {
         .status(400)
         .json({ error: "Tipo inválido. Use 'entrada' ou 'saida'" });
     }
-    const filtered = await repo.getByType(type);
+    const filtered = await repo.getByType(type, req.userId);
     if (filtered.length === 0) {
       return res
         .status(404)
@@ -68,7 +68,7 @@ async function getTransactionsByType(req, res) {
 // Saldo
 async function getBalance(req, res) {
   try {
-    const balance = await repo.getBalance();
+    const balance = await repo.getBalance(req.userId);
     res.json({ balance });
   } catch (err) {
     res.status(500).json({ error: `Erro ao calcular saldo: ${err}` });
@@ -78,7 +78,7 @@ async function getBalance(req, res) {
 // Saldo por categoria
 async function getBalanceByCategory(req, res) {
   try {
-    const balance = await repo.getBalanceByCategory();
+    const balance = await repo.getBalanceByCategory(req.userId);
     res.json({ balance });
   } catch (err) {
     res
@@ -102,14 +102,17 @@ async function createTransaction(req, res) {
 
     const category_id = await repo.getCategoryIdByName(category);
 
-    const created = await repo.create({
-      amount,
-      description,
-      date,
-      category,
-      type,
-      category_id,
-    });
+    const created = await repo.create(
+      {
+        amount,
+        description,
+        date,
+        category,
+        type,
+        category_id,
+      },
+      req.userId,
+    );
 
     res.status(201).json(created);
   } catch (err) {
@@ -130,20 +133,24 @@ async function updateTransaction(req, res) {
     if (!isValidType(type)) errors.push({ type: "Entrada ou saída inválida" });
     if (errors.length > 0) return invalidPayloadResponse(res, errors);
 
-    const exists = await repo.getById(req.params.id);
+    const exists = await repo.getById(req.params.id, req.userId);
     if (!exists)
       return res.status(404).json({ error: "Transação não encontrada" });
 
     const category_id = await repo.getCategoryIdByName(category);
 
-    const updated = await repo.update(req.params.id, {
-      description,
-      amount,
-      category,
-      date,
-      type,
-      category_id,
-    });
+    const updated = await repo.update(
+      req.params.id,
+      {
+        description,
+        amount,
+        category,
+        date,
+        type,
+        category_id,
+      },
+      req.userId,
+    );
 
     res.json(updated);
   } catch (err) {
@@ -166,7 +173,7 @@ async function patchTransaction(req, res) {
       return res.status(400).json({ error: "Entrada ou saída inválida" });
     }
 
-    const exists = await repo.getById(req.params.id);
+    const exists = await repo.getById(req.params.id, req.userId);
     if (!exists)
       return res.status(404).json({ error: "Transação não encontrada" });
 
@@ -175,7 +182,7 @@ async function patchTransaction(req, res) {
       updateData.category_id = await repo.getCategoryIdByName(data.category);
     }
 
-    const updated = await repo.patch(req.params.id, updateData);
+    const updated = await repo.patch(req.params.id, updateData, req.userId);
     res.json(updated);
   } catch (err) {
     res
@@ -187,7 +194,7 @@ async function patchTransaction(req, res) {
 // Deletar
 async function deleteTransaction(req, res) {
   try {
-    const deleted = await repo.remove(req.params.id);
+    const deleted = await repo.remove(req.params.id, req.userId);
     if (!deleted)
       return res.status(404).json({ error: "Transação não encontrada" });
     res.status(204).send();

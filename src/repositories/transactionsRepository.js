@@ -1,6 +1,6 @@
 const db = require("../db");
 
-async function getAll() {
+async function getAll(userId) {
   return await db("transactions")
     .select(
       "transactions.id",
@@ -9,28 +9,29 @@ async function getAll() {
       "transactions.type",
       "transactions.date",
       "transactions.category_id",
-      "categories.name as category"
-    )
-    .leftJoin("categories", "transactions.category_id", "categories.id");
-}
-
-async function getById(id) {
-  return await db("transactions")
-    .select(
-      "transactions.id",
-      "transactions.description",
-      "transactions.amount",
-      "transactions.type",
-      "transactions.date",
-      "transactions.category_id",
-      "categories.name as category"
+      "categories.name as category",
     )
     .leftJoin("categories", "transactions.category_id", "categories.id")
-    .where("transactions.id", id)
+    .where("transactions.user_id", userId);
+}
+
+async function getById(id, userId) {
+  return await db("transactions")
+    .select(
+      "transactions.id",
+      "transactions.description",
+      "transactions.amount",
+      "transactions.type",
+      "transactions.date",
+      "transactions.category_id",
+      "categories.name as category",
+    )
+    .leftJoin("categories", "transactions.category_id", "categories.id")
+    .where({ "transactions.id": id, "transactions.user_id": userId })
     .first();
 }
 
-async function getByCategory(category) {
+async function getByCategory(category, userId) {
   return await db("transactions")
     .select(
       "transactions.id",
@@ -39,13 +40,13 @@ async function getByCategory(category) {
       "transactions.type",
       "transactions.date",
       "transactions.category_id",
-      "categories.name as category"
+      "categories.name as category",
     )
     .leftJoin("categories", "transactions.category_id", "categories.id")
-    .where("categories.name", category);
+    .where({ "categories.name": category, "transactions.user_id": userId });
 }
 
-async function getByType(type) {
+async function getByType(type, userId) {
   return await db("transactions")
     .select(
       "transactions.id",
@@ -54,10 +55,10 @@ async function getByType(type) {
       "transactions.type",
       "transactions.date",
       "transactions.category_id",
-      "categories.name as category"
+      "categories.name as category",
     )
     .leftJoin("categories", "transactions.category_id", "categories.id")
-    .where("transactions.type", type);
+    .where({ "transactions.type": type, "transactions.user_id": userId });
 }
 
 async function getCategoryIdByName(name) {
@@ -69,27 +70,30 @@ async function getCategoryIdByName(name) {
   return category.id;
 }
 
-async function create(transaction) {
-  const [id] = await db("transactions").insert(transaction);
-  return await getById(id);
+async function create(transaction, userId) {
+  const [id] = await db("transactions").insert({
+    ...transaction,
+    user_id: userId,
+  });
+  return await getById(id, userId);
 }
 
-async function update(id, transaction) {
-  await db("transactions").where({ id }).update(transaction);
-  return await getById(id);
+async function update(id, transaction, userId) {
+  await db("transactions").where({ id, user_id: userId }).update(transaction);
+  return await getById(id, userId);
 }
 
-async function patch(id, data) {
-  await db("transactions").where({ id }).update(data);
-  return await getById(id);
+async function patch(id, data, userId) {
+  await db("transactions").where({ id, user_id: userId }).update(data);
+  return await getById(id, userId);
 }
 
-async function remove(id) {
-  return await db("transactions").where({ id }).del();
+async function remove(id, userId) {
+  return await db("transactions").where({ id, user_id: userId }).del();
 }
 
-async function getBalance() {
-  const transactions = await getAll();
+async function getBalance(userId) {
+  const transactions = await getAll(userId);
 
   const balance = transactions.reduce(
     (acc, t) => {
@@ -100,7 +104,7 @@ async function getBalance() {
       }
       return acc;
     },
-    { entradas: 0, saidas: 0, total: 0 }
+    { entradas: 0, saidas: 0, total: 0 },
   );
 
   balance.total = balance.entradas - balance.saidas;
@@ -108,8 +112,8 @@ async function getBalance() {
   return balance;
 }
 
-async function getBalanceByCategory() {
-  const transactions = await getAll();
+async function getBalanceByCategory(userId) {
+  const transactions = await getAll(userId);
 
   return transactions.reduce((acc, t) => {
     const category = t.category || "Outros";
