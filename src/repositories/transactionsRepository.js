@@ -71,11 +71,14 @@ async function getCategoryIdByName(name) {
 }
 
 async function create(transaction, userId) {
-  const [id] = await db("transactions").insert({
-    ...transaction,
-    user_id: userId,
-  });
-  return await getById(id, userId);
+  const [created] = await db("transactions")
+    .insert({
+      ...transaction,
+      user_id: userId,
+    })
+    .returning("*");
+
+  return created;
 }
 
 async function update(id, transaction, userId) {

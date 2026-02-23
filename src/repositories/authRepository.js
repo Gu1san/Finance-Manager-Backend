@@ -5,6 +5,8 @@ async function findByEmail(email) {
 }
 
 async function findById(id) {
+  if (!id) return null;
+
   return await db("users").where({ id }).first();
 }
 

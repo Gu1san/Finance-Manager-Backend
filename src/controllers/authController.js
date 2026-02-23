@@ -16,7 +16,7 @@ async function register(req, res) {
 
     if (errors.length > 0) return invalidPayloadResponse(res, errors);
 
-    const userExists = userRepository.findByEmail(email);
+    const userExists = await userRepository.findByEmail(email);
 
     if (userExists) {
       throw new Error("User already exists");
@@ -25,7 +25,6 @@ async function register(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = {
-      id: crypto.randomUUID(),
       name,
       email,
       password: hashedPassword,
@@ -81,7 +80,7 @@ function logout(req, res) {
 
 async function me(req, res) {
   try {
-    const user = userRepository.findById(req.userId);
+    const user = userRepository.findById(req.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
