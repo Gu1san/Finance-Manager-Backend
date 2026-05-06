@@ -11,8 +11,27 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL, // URL do frontend em produção
+  "https://finance-manager-frontend-alsvezrpq.vercel.app",
+];
+
 //Middlewares
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
