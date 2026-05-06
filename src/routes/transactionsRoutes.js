@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const { ensureAuthenticated } = require("../middlewares/authMiddleware");
 
-transactionsController = require("../controllers/transactionsController");
+const transactionsController = require("../controllers/transactionsController");
+
+router.use(ensureAuthenticated);
 
 router.get("/", transactionsController.getTransactions);
 router.get("/category", transactionsController.getTransactionsByCategory);

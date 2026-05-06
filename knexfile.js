@@ -1,7 +1,5 @@
 require("dotenv").config();
 
-const isProduction = process.env.NODE_ENV === "production";
-
 module.exports = {
   development: {
     client: "pg",
@@ -22,7 +20,10 @@ module.exports = {
 
   production: {
     client: "pg",
-    connection: process.env.DATABASE_URL,
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    },
     pool: {
       min: 0,
       max: 5,
