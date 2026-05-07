@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "migrate": "knex migrate:latest --env production"
+    "migrate": "knex migrate:latest --env production",
+    "build": "npm install && npm start"
   },
   "keywords": [],
   "author": "",
