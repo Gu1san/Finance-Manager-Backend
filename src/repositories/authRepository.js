@@ -1,7 +1,9 @@
 const db = require("../db");
 
 async function findByEmail(email) {
-  return await db("users").where({ email }).first();
+  const user = await db("users").where({ email }).first();
+
+  return user;
 }
 
 async function findById(id) {

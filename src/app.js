@@ -21,7 +21,7 @@ const allowedOrigins = [
 
 console.log("Iniciando servidor...");
 console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("PORT:", process.env.PORT);
+console.log("PORT:", PORT);
 
 //Middlewares
 app.use(
@@ -49,7 +49,11 @@ app.use("/auth", authRoutes);
 
 console.log("Rotas carregadas");
 
-db.raw("SELECT 1")
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
+
+/*db.raw("SELECT 1")
   .then(() => {
     console.log("Banco conectado");
 
@@ -60,3 +64,4 @@ db.raw("SELECT 1")
   .catch((err) => {
     console.error("Erro banco:", err);
   });
+*/

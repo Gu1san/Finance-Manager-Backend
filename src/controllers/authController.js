@@ -69,7 +69,13 @@ async function login(req, res) {
       email: user.email,
     });
   } catch (err) {
-    res.status(401).json({ message: err.message });
+    console.error("Erro no login:");
+    console.error(err);
+
+    res.status(500).json({
+      message: err.message,
+      stack: err.stack,
+    });
   }
 }
 
@@ -88,8 +94,9 @@ async function me(req, res) {
       name: user.name,
       email: user.email,
     });
-  } catch {
-    res.status(401).json({ message: "Unauthorized" });
+  } catch (err) {
+    console.log(err);
+    res.status(401).json({ message: err });
   }
 }
 
