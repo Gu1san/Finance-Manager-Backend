@@ -63,10 +63,15 @@ async function getByType(type, userId) {
 
 async function getCategoryIdByName(name) {
   let category = await db("categories").where({ name }).first();
-  if (!category) {
-    const [id] = await db("categories").insert({ name });
-    return id; // retorna o novo id
+
+  if (category) {
+    return category.id;
   }
+
+  await db("categories").insert({ name });
+
+  category = await db("categories").where({ name }).first();
+
   return category.id;
 }
 
