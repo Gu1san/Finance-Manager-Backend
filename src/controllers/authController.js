@@ -86,7 +86,7 @@ function logout(req, res) {
 
 async function me(req, res) {
   try {
-    const user = userRepository.findById(req.id);
+    const user = await userRepository.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -96,7 +96,7 @@ async function me(req, res) {
     });
   } catch (err) {
     console.log(err);
-    res.status(401).json({ message: err });
+    return res.status(401).json({ message: err });
   }
 }
 
