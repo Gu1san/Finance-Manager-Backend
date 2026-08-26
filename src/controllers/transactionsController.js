@@ -1,12 +1,9 @@
-// controllers/transactionsController.js
 const repo = require("../repositories/transactionsRepository");
 const {
   isValidDate,
   invalidPayloadResponse,
   isValidType,
 } = require("../utils/errorHandler");
-const fs = require("fs");
-const csv = require("csv-parser");
 
 // Buscar todas
 async function getTransactions(req, res) {
@@ -14,7 +11,9 @@ async function getTransactions(req, res) {
     const transactions = await repo.getAll(req.user.id);
     res.json(transactions);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
+    res.status(500).json({
+      error: `Erro ao buscar transações: ${err.message}`,
+    });
   }
 }
 
@@ -22,11 +21,18 @@ async function getTransactions(req, res) {
 async function getTransactionById(req, res) {
   try {
     const transaction = await repo.getById(req.params.id, req.user.id);
-    if (!transaction)
-      return res.status(404).json({ error: "Transação não encontrada" });
+
+    if (!transaction) {
+      return res.status(404).json({
+        error: "Transação não encontrada",
+      });
+    }
+
     res.json(transaction);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao buscar transação: ${err}` });
+    res.status(500).json({
+      error: `Erro ao buscar transação: ${err.message}`,
+    });
   }
 }
 
@@ -34,56 +40,53 @@ async function getTransactionById(req, res) {
 async function getTransactionsByCategory(req, res) {
   try {
     const category = req.query.category;
+
+    if (!category) {
+      return res.status(400).json({
+        error: "Categoria não informada",
+      });
+    }
+
     const filtered = await repo.getByCategory(category, req.user.id);
-    if (filtered.length === 0)
-      return res
-        .status(404)
-        .json({ error: "Nenhuma transação encontrada nesta categoria" });
+
+    if (filtered.length === 0) {
+      return res.status(404).json({
+        error: "Nenhuma transação encontrada nesta categoria",
+      });
+    }
+
     res.json(filtered);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
+    res.status(500).json({
+      error: `Erro ao buscar transações: ${err.message}`,
+    });
   }
 }
 
+// Buscar por tipo
 async function getTransactionsByType(req, res) {
   try {
     const type = req.query.type;
+
     if (!isValidType(type)) {
-      return res
-        .status(400)
-        .json({ error: "Tipo inválido. Use 'entrada' ou 'saida'" });
+      return res.status(400).json({
+        error: "Tipo inválido. Use 'entrada' ou 'saida'",
+      });
     }
+
     const filtered = await repo.getByType(type, req.user.id);
+
     if (filtered.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "Nenhuma transação encontrada deste tipo" });
+      return res.status(404).json({
+        error: "Nenhuma transação encontrada deste tipo",
+      });
     }
+
     res.json(filtered);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao buscar transações: ${err}` });
-  }
-}
-
-// Saldo
-async function getBalance(req, res) {
-  try {
-    const balance = await repo.getBalance(req.user.id);
-    res.json({ balance });
-  } catch (err) {
-    res.status(500).json({ error: `Erro ao calcular saldo: ${err}` });
-  }
-}
-
-// Saldo por categoria
-async function getBalanceByCategory(req, res) {
-  try {
-    const balance = await repo.getBalanceByCategory(req.user.id);
-    res.json({ balance });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ error: `Erro ao calcular saldo por categoria: ${err}` });
+    res.status(500).json({
+      error: `Erro ao buscar transações: ${err.message}`,
+    });
   }
 }
 
@@ -94,11 +97,26 @@ async function createTransaction(req, res) {
     const errors = [];
 
     if (!amount || !description || !date || !category || !type) {
-      errors.push({ fields: "Campos obrigatórios ausentes" });
+      errors.push({
+        fields: "Campos obrigatórios ausentes",
+      });
     }
-    if (!isValidDate(date)) errors.push({ date: "Data inválida" });
-    if (!isValidType(type)) errors.push({ type: "Entrada ou saida inválida" });
-    if (errors.length > 0) return invalidPayloadResponse(res, errors);
+
+    if (!isValidDate(date)) {
+      errors.push({
+        date: "Data inválida",
+      });
+    }
+
+    if (!isValidType(type)) {
+      errors.push({
+        type: "Entrada ou saída inválida",
+      });
+    }
+
+    if (errors.length > 0) {
+      return invalidPayloadResponse(res, errors);
+    }
 
     const category_id = await repo.getCategoryIdByName(category);
 
@@ -116,26 +134,47 @@ async function createTransaction(req, res) {
 
     res.status(201).json(created);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao criar transação: ${err}` });
+    res.status(500).json({
+      error: `Erro ao criar transação: ${err.message}`,
+    });
   }
 }
 
-// Atualizar (PUT)
+// Atualizar
 async function updateTransaction(req, res) {
   try {
     const { description, amount, category, date, type } = req.body;
     const errors = [];
 
     if (!description || !amount || !category || !date || !type) {
-      errors.push({ fields: "Campos obrigatórios ausentes" });
+      errors.push({
+        fields: "Campos obrigatórios ausentes",
+      });
     }
-    if (!isValidDate(date)) errors.push({ date: "Data inválida" });
-    if (!isValidType(type)) errors.push({ type: "Entrada ou saída inválida" });
-    if (errors.length > 0) return invalidPayloadResponse(res, errors);
+
+    if (!isValidDate(date)) {
+      errors.push({
+        date: "Data inválida",
+      });
+    }
+
+    if (!isValidType(type)) {
+      errors.push({
+        type: "Entrada ou saída inválida",
+      });
+    }
+
+    if (errors.length > 0) {
+      return invalidPayloadResponse(res, errors);
+    }
 
     const exists = await repo.getById(req.params.id, req.user.id);
-    if (!exists)
-      return res.status(404).json({ error: "Transação não encontrada" });
+
+    if (!exists) {
+      return res.status(404).json({
+        error: "Transação não encontrada",
+      });
+    }
 
     const category_id = await repo.getCategoryIdByName(category);
 
@@ -154,40 +193,56 @@ async function updateTransaction(req, res) {
 
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: `Erro ao atualizar transação: ${err}` });
+    res.status(500).json({
+      error: `Erro ao atualizar transação: ${err.message}`,
+    });
   }
 }
 
-// Atualizar parcialmente (PATCH)
+// Atualizar parcialmente
 async function patchTransaction(req, res) {
   try {
     const data = req.body;
+
     if (!data || typeof data !== "object" || Array.isArray(data)) {
-      return res.status(400).json({ error: "Payload inválido" });
+      return res.status(400).json({
+        error: "Payload inválido",
+      });
     }
 
     if (data.date && !isValidDate(data.date)) {
-      return res.status(400).json({ error: "Data inválida" });
+      return res.status(400).json({
+        error: "Data inválida",
+      });
     }
+
     if (data.type && !isValidType(data.type)) {
-      return res.status(400).json({ error: "Entrada ou saída inválida" });
+      return res.status(400).json({
+        error: "Entrada ou saída inválida",
+      });
     }
 
     const exists = await repo.getById(req.params.id, req.user.id);
-    if (!exists)
-      return res.status(404).json({ error: "Transação não encontrada" });
 
-    let updateData = { ...data };
+    if (!exists) {
+      return res.status(404).json({
+        error: "Transação não encontrada",
+      });
+    }
+
+    const updateData = { ...data };
+
     if (data.category) {
       updateData.category_id = await repo.getCategoryIdByName(data.category);
     }
 
     const updated = await repo.patch(req.params.id, updateData, req.user.id);
+
     res.json(updated);
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: `Erro ao atualizar parcialmente transação: ${err}` });
+    res.status(500).json({
+      error: `Erro ao atualizar parcialmente a transação: ${err.message}`,
+    });
   }
 }
 
@@ -195,11 +250,18 @@ async function patchTransaction(req, res) {
 async function deleteTransaction(req, res) {
   try {
     const deleted = await repo.remove(req.params.id, req.user.id);
-    if (!deleted)
-      return res.status(404).json({ error: "Transação não encontrada" });
+
+    if (!deleted) {
+      return res.status(404).json({
+        error: "Transação não encontrada",
+      });
+    }
+
     res.status(204).send();
   } catch (err) {
-    res.status(500).json({ error: `Erro ao deletar transação: ${err}` });
+    res.status(500).json({
+      error: `Erro ao deletar transação: ${err.message}`,
+    });
   }
 }
 
@@ -208,8 +270,6 @@ module.exports = {
   getTransactionById,
   getTransactionsByCategory,
   getTransactionsByType,
-  getBalance,
-  getBalanceByCategory,
   createTransaction,
   updateTransaction,
   patchTransaction,

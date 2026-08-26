@@ -6,7 +6,12 @@ const { ensureAuthenticated } = require("../middlewares/authMiddleware");
 
 router.use(ensureAuthenticated);
 
-router.get("/category", reportsController.getReportsByCategory);
-router.get("/type", reportsController.getReportsByType);
+router.get("/summary", reportsController.getSummary);
+
+router.get("/expenses-by-category", reportsController.getExpensesByCategory);
+
+router.get("/income-by-category", reportsController.getIncomeByCategory);
+
+router.get("/balance-evolution", reportsController.getBalanceEvolution);
 
 module.exports = router;
