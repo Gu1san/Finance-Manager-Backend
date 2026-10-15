@@ -1,24 +1,24 @@
-const repo = require("../repositories/reportsRepository");
-const { isValidDate } = require("../utils/errorHandler");
+const repo = require('../repositories/reportsRepository');
+const { isValidDate } = require('../utils/errorHandler');
 
 function getPeriod(req) {
   const { from, to } = req.query;
 
   if (from && !isValidDate(from)) {
     return {
-      error: "Data inicial inválida",
+      error: 'Data inicial inválida',
     };
   }
 
   if (to && !isValidDate(to)) {
     return {
-      error: "Data final inválida",
+      error: 'Data final inválida',
     };
   }
 
   if (from && to && new Date(from) > new Date(to)) {
     return {
-      error: "A data inicial deve ser anterior à data final",
+      error: 'A data inicial deve ser anterior à data final',
     };
   }
 
