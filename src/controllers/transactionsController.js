@@ -1,9 +1,10 @@
-const repo = require("../repositories/transactionsRepository");
+const repo = require('../repositories/transactionsRepository');
+const categoriesRepo = require('../repositories/categoriesRepository');
 const {
   isValidDate,
   invalidPayloadResponse,
   isValidType,
-} = require("../utils/errorHandler");
+} = require('../utils/errorHandler');
 
 // Buscar todas
 async function getTransactions(req, res) {
@@ -24,7 +25,7 @@ async function getTransactionById(req, res) {
 
     if (!transaction) {
       return res.status(404).json({
-        error: "Transação não encontrada",
+        error: 'Transação não encontrada',
       });
     }
 
@@ -43,7 +44,7 @@ async function getTransactionsByCategory(req, res) {
 
     if (!category) {
       return res.status(400).json({
-        error: "Categoria não informada",
+        error: 'Categoria não informada',
       });
     }
 
@@ -51,7 +52,7 @@ async function getTransactionsByCategory(req, res) {
 
     if (filtered.length === 0) {
       return res.status(404).json({
-        error: "Nenhuma transação encontrada nesta categoria",
+        error: 'Nenhuma transação encontrada nesta categoria',
       });
     }
 
@@ -78,7 +79,7 @@ async function getTransactionsByType(req, res) {
 
     if (filtered.length === 0) {
       return res.status(404).json({
-        error: "Nenhuma transação encontrada deste tipo",
+        error: 'Nenhuma transação encontrada deste tipo',
       });
     }
 
@@ -91,26 +92,51 @@ async function getTransactionsByType(req, res) {
 }
 
 // Criar
+
 async function createTransaction(req, res) {
   try {
-    const { amount, description, date, category, type } = req.body;
+    const { amount, description, date, category_id, type } = req.body;
+
     const errors = [];
 
-    if (!amount || !description || !date || !category || !type) {
+    if (
+      amount === undefined ||
+      amount === null ||
+      amount === '' ||
+      !description?.trim() ||
+      !date ||
+      category_id === undefined ||
+      category_id === null ||
+      category_id === '' ||
+      !type
+    ) {
       errors.push({
-        fields: "Campos obrigatórios ausentes",
+        fields: 'Campos obrigatórios ausentes',
       });
     }
 
     if (!isValidDate(date)) {
       errors.push({
-        date: "Data inválida",
+        date: 'Data inválida',
       });
     }
 
     if (!isValidType(type)) {
       errors.push({
-        type: "Entrada ou saída inválida",
+        type: 'Entrada ou saída inválida',
+      });
+    }
+
+    const parsedCategoryId = Number(category_id);
+
+    if (
+      category_id !== undefined &&
+      category_id !== null &&
+      category_id !== '' &&
+      (!Number.isInteger(parsedCategoryId) || parsedCategoryId <= 0)
+    ) {
+      errors.push({
+        category_id: 'ID de categoria inválido',
       });
     }
 
@@ -118,107 +144,72 @@ async function createTransaction(req, res) {
       return invalidPayloadResponse(res, errors);
     }
 
-    const category_id = await repo.getCategoryIdByName(category);
+    const category = await categoriesRepo.getAvailableCategoryById(
+      parsedCategoryId,
+      req.user.id,
+    );
+
+    if (!category) {
+      return res.status(400).json({
+        error: 'Categoria inválida ou indisponível para este usuário',
+      });
+    }
 
     const created = await repo.create(
       {
         amount,
-        description,
+        description: description.trim(),
         date,
-        category,
+        category: category.name,
+        category_id: category.id,
         type,
-        category_id,
       },
       req.user.id,
     );
 
-    res.status(201).json(created);
+    return res.status(201).json(created);
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       error: `Erro ao criar transação: ${err.message}`,
     });
   }
 }
 
-// Atualizar
-async function updateTransaction(req, res) {
-  try {
-    const { description, amount, category, date, type } = req.body;
-    const errors = [];
-
-    if (!description || !amount || !category || !date || !type) {
-      errors.push({
-        fields: "Campos obrigatórios ausentes",
-      });
-    }
-
-    if (!isValidDate(date)) {
-      errors.push({
-        date: "Data inválida",
-      });
-    }
-
-    if (!isValidType(type)) {
-      errors.push({
-        type: "Entrada ou saída inválida",
-      });
-    }
-
-    if (errors.length > 0) {
-      return invalidPayloadResponse(res, errors);
-    }
-
-    const exists = await repo.getById(req.params.id, req.user.id);
-
-    if (!exists) {
-      return res.status(404).json({
-        error: "Transação não encontrada",
-      });
-    }
-
-    const category_id = await repo.getCategoryIdByName(category);
-
-    const updated = await repo.update(
-      req.params.id,
-      {
-        description,
-        amount,
-        category,
-        date,
-        type,
-        category_id,
-      },
-      req.user.id,
-    );
-
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({
-      error: `Erro ao atualizar transação: ${err.message}`,
-    });
-  }
-}
-
 // Atualizar parcialmente
+
 async function patchTransaction(req, res) {
   try {
     const data = req.body;
 
-    if (!data || typeof data !== "object" || Array.isArray(data)) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return res.status(400).json({
-        error: "Payload inválido",
+        error: 'Payload inválido',
       });
     }
 
-    if (data.date && !isValidDate(data.date)) {
+    const allowedFields = [
+      'description',
+      'amount',
+      'category_id',
+      'date',
+      'type',
+    ];
+
+    const receivedFields = Object.keys(data);
+    const invalidFields = receivedFields.filter(
+      (field) => !allowedFields.includes(field),
+    );
+
+    if (invalidFields.length > 0) {
       return res.status(400).json({
-        error: "Data inválida",
+        error: 'Campos não permitidos',
+        fields: invalidFields,
       });
     }
 
-    if (data.type && !isValidType(data.type)) {
+    if (receivedFields.length === 0) {
       return res.status(400).json({
-        error: "Entrada ou saída inválida",
+        error: 'Informe ao menos um campo para atualizar',
       });
     }
 
@@ -226,21 +217,99 @@ async function patchTransaction(req, res) {
 
     if (!exists) {
       return res.status(404).json({
-        error: "Transação não encontrada",
+        error: 'Transação não encontrada',
       });
     }
 
-    const updateData = { ...data };
+    const updateData = {};
 
-    if (data.category) {
-      updateData.category_id = await repo.getCategoryIdByName(data.category);
+    if (Object.hasOwn(data, 'description')) {
+      if (typeof data.description !== 'string' || !data.description.trim()) {
+        return res.status(400).json({
+          error: 'A descrição é obrigatória',
+        });
+      }
+
+      updateData.description = data.description.trim();
+    }
+
+    if (Object.hasOwn(data, 'amount')) {
+      const amount = Number(data.amount);
+
+      if (
+        data.amount === '' ||
+        data.amount === null ||
+        !Number.isFinite(amount) ||
+        amount <= 0
+      ) {
+        return res.status(400).json({
+          error: 'O valor deve ser um número maior que zero',
+        });
+      }
+
+      updateData.amount = amount;
+    }
+
+    if (Object.hasOwn(data, 'date')) {
+      if (!isValidDate(data.date)) {
+        return res.status(400).json({
+          error: 'Data inválida',
+        });
+      }
+
+      updateData.date = data.date;
+    }
+
+    if (Object.hasOwn(data, 'type')) {
+      if (!isValidType(data.type)) {
+        return res.status(400).json({
+          error: 'Entrada ou saída inválida',
+        });
+      }
+
+      updateData.type = data.type;
+    }
+
+    if (Object.hasOwn(data, 'category_id')) {
+      const categoryId = Number(data.category_id);
+
+      if (
+        data.category_id === '' ||
+        data.category_id === null ||
+        !Number.isInteger(categoryId) ||
+        categoryId <= 0
+      ) {
+        return res.status(400).json({
+          error: 'ID de categoria inválido',
+        });
+      }
+
+      const category = await categoriesRepo.getAvailableCategoryById(
+        categoryId,
+        req.user.id,
+      );
+
+      if (!category) {
+        return res.status(400).json({
+          error: 'Categoria inválida ou indisponível para este usuário',
+        });
+      }
+
+      updateData.category_id = category.id;
+      updateData.category = category.name;
     }
 
     const updated = await repo.patch(req.params.id, updateData, req.user.id);
 
-    res.json(updated);
+    if (!updated) {
+      return res.status(404).json({
+        error: 'Transação não encontrada',
+      });
+    }
+
+    return res.status(200).json(updated);
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       error: `Erro ao atualizar parcialmente a transação: ${err.message}`,
     });
   }
@@ -253,7 +322,7 @@ async function deleteTransaction(req, res) {
 
     if (!deleted) {
       return res.status(404).json({
-        error: "Transação não encontrada",
+        error: 'Transação não encontrada',
       });
     }
 
@@ -271,7 +340,6 @@ module.exports = {
   getTransactionsByCategory,
   getTransactionsByType,
   createTransaction,
-  updateTransaction,
   patchTransaction,
   deleteTransaction,
 };

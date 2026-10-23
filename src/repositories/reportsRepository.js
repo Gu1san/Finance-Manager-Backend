@@ -61,9 +61,9 @@ async function getExpensesByCategory(userId, from, to) {
     .leftJoin('categories', 'transactions.category_id', 'categories.id')
     .where('transactions.type', 'saida')
     .andWhere('transactions.user_id', userId)
-    .select('categories.name as category')
+    .select('categories.id as category_id', 'categories.name as category')
     .sum('transactions.amount as total')
-    .groupBy('categories.name')
+    .groupBy('categories.id', 'categories.name')
     .orderBy('total', 'desc');
 
   applyDateFilter(query, from, to);
@@ -76,9 +76,9 @@ async function getIncomeByCategory(userId, from, to) {
     .leftJoin('categories', 'transactions.category_id', 'categories.id')
     .where('transactions.type', 'entrada')
     .andWhere('transactions.user_id', userId)
-    .select('categories.name as category')
+    .select('categories.id as category_id', 'categories.name as category')
     .sum('transactions.amount as total')
-    .groupBy('categories.name')
+    .groupBy('categories.id', 'categories.name')
     .orderBy('total', 'desc');
 
   applyDateFilter(query, from, to);
@@ -132,7 +132,7 @@ async function getBalanceEvolution(userId, from, to) {
   const dailyResults = await query;
 
   // 3. Acumula cada movimentação sobre o saldo inicial.
-  return dailyResults.map((day) => {
+  const evolution = dailyResults.map((day) => {
     balance += Number(day.result);
 
     return {
@@ -140,6 +140,22 @@ async function getBalanceEvolution(userId, from, to) {
       result: balance,
     };
   });
+
+  // 4. Garante um ponto no início do período.
+  if (from) {
+    const hasOpeningDate = evolution.some(
+      (day) => String(day.date).slice(0, 10) === from.slice(0, 10),
+    );
+
+    if (!hasOpeningDate) {
+      evolution.unshift({
+        date: from,
+        result: openingResult.balance,
+      });
+    }
+  }
+
+  return evolution;
 }
 
 module.exports = {
